@@ -22,6 +22,7 @@ const {
   addResourceFileId,
   deleteResourceFileId,
   addResourceVectorId,
+  deleteResourceVectorId,
 } = require('~/server/controllers/assistants/v2');
 const { convertImage, resizeAndConvert } = require('~/server/services/Files/images');
 const { addAgentResourceFile, removeAgentResourceFiles } = require('~/models/Agent');
@@ -133,13 +134,17 @@ const processDeleteRequest = async ({ req, files }) => {
   const promises = [];
 
   /** @type {Record<string, OpenAI | undefined>} */
-  const client = { [FileSources.openai]: undefined, [FileSources.azure]: undefined };
+  const client = {
+    [FileSources.openai]: undefined,
+    [FileSources.azure]: undefined,
+    [FileSources.vector_store]: undefined,
+  };
   const initializeClients = async () => {
-    const openAIClient = await getOpenAIClient({
-      req,
-      overrideEndpoint: EModelEndpoint.assistants,
-    });
-    client[FileSources.openai] = openAIClient.openai;
+    // const openAIClient = await getOpenAIClient({
+    //   req,
+    //   overrideEndpoint: EModelEndpoint.assistants,
+    // });
+    // client[FileSources.openai] = openAIClient.openai;
 
     if (!req.app.locals[EModelEndpoint.azureOpenAI]?.assistants) {
       return;
@@ -150,6 +155,13 @@ const processDeleteRequest = async ({ req, files }) => {
       overrideEndpoint: EModelEndpoint.azureAssistants,
     });
     client[FileSources.azure] = azureClient.openai;
+
+    // Initialize Vector Store client (specific handling)
+    const vectorStoreClient = await getOpenAIClient({
+      req,
+      overrideEndpoint: EModelEndpoint.azureAssistants,
+    });
+    client[FileSources.vector_store] = vectorStoreClient.openai;
   };
 
   if (req.body.assistant_id !== undefined) {
@@ -172,9 +184,20 @@ const processDeleteRequest = async ({ req, files }) => {
       await initializeClients();
     }
 
+    // const openai = client[source];
     const openai = client[source];
 
-    if (req.body.assistant_id && req.body.tool_resource) {
+    if (req.body.assistant_id && req.body.tool_resource === EToolResources.file_search) {
+      promises.push(
+        deleteResourceVectorId({
+          req,
+          openai,
+          file_id: file.file_id,
+          assistant_id: req.body.assistant_id,
+          tool_resource: req.body.tool_resource,
+        }),
+      );
+    } else if (req.body.assistant_id && req.body.tool_resource) {
       promises.push(
         deleteResourceFileId({
           req,

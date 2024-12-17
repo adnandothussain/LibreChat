@@ -52,36 +52,23 @@ async function uploadToVectorStore({ openai, file, vectorStoreId }) {
 /**
  * Deletes a file from Azure OpenAI Vector Store.
  *
- * @param {string} file_id - The ID of the file to delete.
- * @param {string} vectorStoreId - The ID of the vector store.
+ * @param {Object} params - The parameters for the upload.
+ * @param {OpenAIClient} openai - The initialized OpenAI client.
+ * @param {Express.Multer.File} params.file - The file uploaded to the server via multer.
  * @returns {Promise<void>}
  */
-async function deleteFromVectorStore(file_id, vectorStoreId) {
+async function deleteFromVectorStore(req, file, openai) {
   try {
-    // Get OpenAI client directly
-    const { openai } = await getOpenAIClient();
-    const azureOpenAIEndpoint = openai.baseURL;
-    const azureOpenAIKey = openai.apiKey;
+    const res = await openai.beta.vectorStores.del(file.file_id);
 
-    const response = await axios.delete(
-      `${azureOpenAIEndpoint}/vector_stores/${vectorStoreId}/files/${file_id}?api-version=2024-10-01-preview`,
-      {
-        headers: {
-          'api-key': azureOpenAIKey,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
-    if (!response.data.deleted) {
-      throw new Error(`Failed to delete file ${file_id} from Azure Vector Store`);
+    if (!res.deleted) {
+      throw new Error('OpenAI returned `false` for deleted status');
     }
-
     logger.debug(
-      `[deleteFromVectorStore] Successfully deleted file ${file_id} from Azure Vector Store`,
+      `[deleteOpenAIFile] User ${req.user.id} successfully deleted ${file.file_id} from OpenAI`,
     );
   } catch (error) {
-    logger.error('[deleteFromVectorStore] Error deleting file:', error.message);
+    logger.error('[deleteOpenAIFile] Error deleting file from OpenAI: ' + error.message);
     throw error;
   }
 }
