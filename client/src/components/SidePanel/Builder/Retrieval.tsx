@@ -50,7 +50,7 @@ export default function Retrieval({
       <HoverCard openDelay={50}>
         <div className="flex items-center">
           <Controller
-            name={Capabilities.retrieval}
+            name={Capabilities.file_search}
             control={control}
             render={({ field }) => (
               <Checkbox
@@ -69,10 +69,10 @@ export default function Retrieval({
                 'form-check-label text-token-text-primary w-full select-none',
                 isDisabled ? 'cursor-no-drop opacity-50' : 'cursor-pointer',
               )}
-              htmlFor={Capabilities.retrieval}
+              htmlFor={Capabilities.file_search}
               onClick={() =>
                 retrievalModels.has(model) &&
-                setValue(Capabilities.retrieval, !getValues(Capabilities.retrieval), {
+                setValue(Capabilities.file_search, !getValues(Capabilities.file_search), {
                   shouldDirty: true,
                 })
               }

@@ -46,11 +46,12 @@ export default function CodeFiles({
   }, [_files]);
 
   const endpointFileConfig = fileConfig.endpoints[endpoint] as EndpointFileConfig | undefined;
-  const isUploadDisabled = endpointFileConfig?.disabled ?? false;
+  const isUploadDisabled =
+    (endpointFileConfig?.disabled ?? false) || (tool_resource === 'file_search' && files.size > 0);
 
-  if (isUploadDisabled) {
-    return null;
-  }
+  // if (isUploadDisabled) {
+  //   return null;
+  // }
 
   const handleButtonClick = () => {
     // necessary to reset the input
@@ -63,9 +64,6 @@ export default function CodeFiles({
   return (
     <div className="mb-2 w-full">
       <div className="flex flex-col gap-4">
-        {/* <div className="rounded-lg text-xs text-text-secondary">
-          {localize('com_assistants_code_interpreter_files')}
-        </div> */}
         <FileRow
           files={files}
           setFiles={setFiles}
@@ -77,18 +75,20 @@ export default function CodeFiles({
         <div>
           <button
             type="button"
-            disabled={!assistant_id}
-            className="btn btn-neutral border-token-border-light relative h-9 w-full rounded-lg font-medium"
+            disabled={isUploadDisabled || !assistant_id}
+            className={`btn btn-neutral border-token-border-light relative h-9 w-full rounded-lg font-medium ${
+              isUploadDisabled ? 'cursor-not-allowed opacity-50' : ''
+            }`}
             onClick={handleButtonClick}
           >
             <div className="flex w-full items-center justify-center gap-2">
               <input
-                multiple={true}
+                multiple={tool_resource !== EToolResources.file_search}
                 type="file"
                 style={{ display: 'none' }}
                 tabIndex={-1}
                 ref={fileInputRef}
-                disabled={!assistant_id}
+                disabled={!assistant_id || isUploadDisabled}
                 onChange={handleFileChange}
               />
 
@@ -99,6 +99,11 @@ export default function CodeFiles({
                 : null}
             </div>
           </button>
+          {isUploadDisabled && tool_resource === EToolResources.file_search && (
+            <p className="mt-2 text-sm text-red-500">
+              {localize('com_ui_file_search_limit')} {/* Localize this error message */}
+            </p>
+          )}
         </div>
       </div>
     </div>
